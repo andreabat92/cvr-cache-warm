@@ -1,13 +1,14 @@
 #!/bin/sh
 # Tiene calda la cache delle 4 pagine chiave, solo GET, una richiesta alla volta.
-# Ogni 10 minuti: home, /oct-roma/, /prenota/, /prezzi/, ognuna senza cookie e con iPhone UA + cookie cvrwarm=1.
+# Ogni 4 minuti: home, /oct-roma/, /prenota/, /prezzi/ senza cookie (prova 1 ora: a 4 min mai MISS).
+# Una volta all'ora (e all'avvio): le stesse 4 pagine con iPhone UA + cookie cvrwarm=1.
 # Una volta all'ora (e all'avvio): giro completo della sitemap, senza cookie.
 # Ogni richiesta stampa: ora, x-cache-status, codice HTTP, tempo, URL (serve a ricavare la durata della cache nginx).
 # Si ferma con errore dopo 2 richieste fallite di fila. Esce da solo dopo DURATA secondi (meno del timeout del job).
 BASE=https://campovisivoroma.it
 UA_TEL='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
 DURATA=${DURATA:-20400}   # 340 minuti
-CICLO=600
+CICLO=240
 GIRO_SITEMAP=3600
 PAUSA=2
 FALLITE=0
@@ -40,15 +41,19 @@ sitemap() {
   rm -f "$H.idx" "$H.urls"
 }
 
-INIZIO=$(date +%s); ULTIMO_GIRO=0
+INIZIO=$(date +%s); ULTIMO_GIRO=0; ULTIMO_COOKIE=0
 while :; do
   T0=$(date +%s)
   if [ $((T0 - ULTIMO_GIRO)) -ge "$GIRO_SITEMAP" ]; then echo "== giro sitemap"; sitemap; ULTIMO_GIRO=$T0; fi
   echo "== pagine chiave"
   for p in / /oct-roma/ /prenota/ /prezzi/; do
     get "$BASE$p"
-    get "$BASE$p" -A "$UA_TEL" -H 'Cookie: cvrwarm=1'
   done
+  if [ $((T0 - ULTIMO_COOKIE)) -ge "$GIRO_SITEMAP" ]; then
+    echo "== giro con cookie"
+    for p in / /oct-roma/ /prenota/ /prezzi/; do get "$BASE$p" -A "$UA_TEL" -H 'Cookie: cvrwarm=1'; done
+    ULTIMO_COOKIE=$T0
+  fi
   T1=$(date +%s)
   [ $((T1 - INIZIO + CICLO)) -ge "$DURATA" ] && break
   A=$((CICLO - (T1 - T0))); [ "$A" -gt 0 ] && sleep "$A"

@@ -1,0 +1,13 @@
+name: prova-durata-cache
+on:
+  workflow_dispatch:
+concurrency:
+  group: warm
+  cancel-in-progress: false
+jobs:
+  prova:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh prova-durata.sh

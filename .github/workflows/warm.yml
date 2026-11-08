@@ -1,11 +1,15 @@
 name: warm
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '7 * * * *'
   workflow_dispatch:
+concurrency:
+  group: warm
+  cancel-in-progress: false
 jobs:
   warm:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - run: sh scalda-cache.sh

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Tiene calda la cache delle 4 pagine chiave, solo GET, una richiesta alla volta.
-# Ogni 4 minuti: home, /oct-roma/, /prenota/, /prezzi/ senza cookie (prova 1 ora: a 4 min mai MISS).
+# Tiene calda la cache delle 8 pagine chiave, solo GET, una richiesta alla volta.
+# Ogni 4 minuti: le 8 pagine di CHIAVE senza cookie (home, /oct-roma/, /prenota/, /prezzi/ + 4 piu' visitate; prova 1 ora: a 4 min mai MISS).
 # Una volta all'ora (e all'avvio): le stesse 4 pagine con iPhone UA + cookie cvrwarm=1.
 # Una volta all'ora (e all'avvio): giro completo della sitemap, senza cookie.
 # Ogni richiesta stampa: ora, x-cache-status, codice HTTP, tempo, URL (serve a ricavare la durata della cache nginx).
@@ -11,6 +11,7 @@ DURATA=${DURATA:-20400}   # 340 minuti
 CICLO=240
 GIRO_SITEMAP=3600
 PAUSA=2
+CHIAVE='/ /oct-roma/ /prenota/ /prezzi/ /esame-oct-valori-normali-come-leggere-i-risultati/ /metodo-gandolfo/ /patente/ /pressione-oculare-alta-sintomi-cause-e-quando-preoccuparsi/'
 FALLITE=0
 H=$(mktemp)
 
@@ -46,7 +47,7 @@ while :; do
   T0=$(date +%s)
   if [ $((T0 - ULTIMO_GIRO)) -ge "$GIRO_SITEMAP" ]; then echo "== giro sitemap"; sitemap; ULTIMO_GIRO=$T0; fi
   echo "== pagine chiave"
-  for p in / /oct-roma/ /prenota/ /prezzi/; do
+  for p in $CHIAVE; do
     get "$BASE$p"
   done
   if [ $((T0 - ULTIMO_COOKIE)) -ge "$GIRO_SITEMAP" ]; then

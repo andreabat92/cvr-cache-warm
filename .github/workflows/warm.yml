@@ -6,10 +6,23 @@ on:
 concurrency:
   group: warm
   cancel-in-progress: false
+permissions:
+  actions: write
+  contents: read
 jobs:
   warm:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
+      - run: echo "START=$(date +%s)" >> "$GITHUB_ENV"
       - run: sh scalda-cache.sh
+      - name: Riavvio se il run e' morto
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ $(( $(date +%s) - START )) -lt 600 ]; then echo "Run durato meno di 10 minuti: non riavvio"; exit 0; fi
+          sleep 300
+          gh workflow run warm.yml

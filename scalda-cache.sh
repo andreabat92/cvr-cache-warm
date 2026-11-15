@@ -4,7 +4,7 @@
 # Una volta all'ora (e all'avvio): le stesse 4 pagine con iPhone UA + cookie cvrwarm=1.
 # Una volta all'ora (e all'avvio): giro completo della sitemap, senza cookie.
 # Ogni richiesta stampa: ora, x-cache-status, codice HTTP, tempo, URL (serve a ricavare la durata della cache nginx).
-# Si ferma con errore dopo 2 richieste fallite di fila. Esce da solo dopo DURATA secondi (meno del timeout del job).
+# Dopo un errore aspetta 5 minuti senza fare richieste; si ferma con errore se anche la richiesta successiva fallisce. Esce da solo dopo DURATA secondi (meno del timeout del job).
 BASE=https://campovisivoroma.it
 UA_TEL='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
 DURATA=${DURATA:-20400}   # 340 minuti
@@ -28,6 +28,7 @@ get() {
     FALLITE=$((FALLITE+1))
   fi
   if [ "$FALLITE" -ge 2 ]; then echo "Stop: 2 richieste fallite di fila"; exit 1; fi
+  if [ "$FALLITE" -eq 1 ]; then echo "$(date -u +%H:%M:%S) pausa 5 min dopo errore, poi un solo tentativo"; sleep 300; fi
   sleep "$PAUSA"
 }
 
